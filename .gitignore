@@ -8,3 +8,7 @@ build/
 .externalNativeBuild
 .cxx
 .kotlin/
+
+# Release signing (keep a backup, never commit)
+/keystore/
+/keystore.properties

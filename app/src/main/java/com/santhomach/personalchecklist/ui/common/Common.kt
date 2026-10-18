@@ -40,6 +40,7 @@ import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.data.db.ItemEntity
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** Builds a ViewModel with the app's repository and the nav arguments in [SavedStateHandle]. */
 inline fun <reified VM : ViewModel> repoViewModelFactory(
@@ -51,9 +52,8 @@ inline fun <reified VM : ViewModel> repoViewModelFactory(
     }
 }
 
-private val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMM yyyy")
-
-fun LocalDate.display(): String = format(dateFormatter)
+fun LocalDate.display(locale: Locale = Locale.getDefault()): String =
+    format(DateTimeFormatter.ofPattern("EEEE, d MMM yyyy", locale))
 
 fun ChecklistType.label(): String = when (this) {
     ChecklistType.DAILY -> "Daily"

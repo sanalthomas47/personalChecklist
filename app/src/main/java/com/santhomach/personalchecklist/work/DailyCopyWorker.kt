@@ -19,7 +19,7 @@ class DailyCopyWorker(context: Context, params: WorkerParameters) : CoroutineWor
     }
 
     companion object {
-        private const val WORK_NAME = "daily-checklist-copy"
+        internal const val WORK_NAME = "daily-checklist-copy"
 
         /** Queues a run for the upcoming 2am. KEEP leaves an already pending run alone. */
         fun schedule(context: Context, policy: ExistingWorkPolicy = ExistingWorkPolicy.KEEP) {

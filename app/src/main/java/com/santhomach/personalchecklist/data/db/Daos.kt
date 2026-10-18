@@ -24,6 +24,13 @@ interface ChecklistDao {
     @Query("SELECT * FROM checklists WHERE type = :type")
     suspend fun getByType(type: ChecklistType): List<ChecklistEntity>
 
+    @Query("SELECT * FROM checklists ORDER BY createdAt, id")
+    suspend fun getAll(): List<ChecklistEntity>
+
+    /** Removes every checklist; days and items go with them through the foreign-key cascade. */
+    @Query("DELETE FROM checklists")
+    suspend fun deleteAll()
+
     /** Progress comes from each checklist's latest day: today for daily, the only day for one-time. */
     @Query(
         """
@@ -52,6 +59,9 @@ interface DayDao {
 
     @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId ORDER BY date DESC LIMIT 1")
     suspend fun latest(checklistId: Long): ChecklistDayEntity?
+
+    @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId ORDER BY date")
+    suspend fun getAll(checklistId: Long): List<ChecklistDayEntity>
 
     @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId ORDER BY date DESC LIMIT 1")
     fun observeLatest(checklistId: Long): Flow<ChecklistDayEntity?>

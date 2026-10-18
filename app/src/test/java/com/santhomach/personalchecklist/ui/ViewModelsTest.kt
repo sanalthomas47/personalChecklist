@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.santhomach.personalchecklist.data.ChecklistRepository
+import com.santhomach.personalchecklist.data.backup.FakeBackupStorage
 import com.santhomach.personalchecklist.data.db.AppDatabase
 import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.ui.checklist.ChecklistViewModel
@@ -53,7 +54,7 @@ class ViewModelsTest {
 
     @Test
     fun mainCreateAddsChecklistWithChosenType() = runTest {
-        val vm = MainViewModel(repository)
+        val vm = MainViewModel(repository, FakeBackupStorage())
         vm.create("Morning", ChecklistType.DAILY).join()
         vm.create("Trip", ChecklistType.ONE_TIME).join()
 
@@ -64,7 +65,7 @@ class ViewModelsTest {
 
     @Test
     fun mainRenameUpdatesCard() = runTest {
-        val vm = MainViewModel(repository)
+        val vm = MainViewModel(repository, FakeBackupStorage())
         val id = repository.createChecklist("Morning", ChecklistType.DAILY)
         vm.rename(id, "Evening").join()
         assertEquals("Evening", vm.checklists.first { it?.singleOrNull()?.title == "Evening" }!!.single().title)
@@ -72,7 +73,7 @@ class ViewModelsTest {
 
     @Test
     fun mainDeleteRemovesCard() = runTest {
-        val vm = MainViewModel(repository)
+        val vm = MainViewModel(repository, FakeBackupStorage())
         val id = repository.createChecklist("Morning", ChecklistType.DAILY)
         vm.delete(id).join()
         assertTrue(vm.checklists.first { it != null }!!.isEmpty())

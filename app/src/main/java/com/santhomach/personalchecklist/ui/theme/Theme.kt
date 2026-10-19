@@ -18,6 +18,7 @@ fun ChecklistTheme(content: @Composable () -> Unit) {
             val context = LocalContext.current
             if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+
         dark -> darkColorScheme()
         else -> lightColorScheme()
     }

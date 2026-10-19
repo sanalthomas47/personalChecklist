@@ -8,6 +8,7 @@ import com.santhomach.personalchecklist.data.backup.BackupChecklist
 import com.santhomach.personalchecklist.data.backup.BackupDay
 import com.santhomach.personalchecklist.data.backup.BackupItem
 import com.santhomach.personalchecklist.data.backup.BackupJson
+import com.santhomach.personalchecklist.data.backup.InvalidBackupException
 import com.santhomach.personalchecklist.data.db.AppDatabase
 import com.santhomach.personalchecklist.data.db.ChecklistType
 import kotlinx.coroutines.flow.first
@@ -196,5 +197,74 @@ class BackupRepositoryTest {
         today = today.plusDays(1)
         repository.ensureToday()
         assertEquals(listOf("A", "B"), items(currentDay(id).id).map { it.text })
+    }
+
+    @Test
+    fun failedImportLeavesExistingDataUntouched() = runTest {
+        seed()
+        val before = BackupJson.encode(repository.exportBackup(exportTime))
+        // The second checklist is broken, so the import fails part-way through.
+        val broken = Backup(
+            exportedAt = "x",
+            checklists = listOf(
+                BackupChecklist("Fine", ChecklistType.DAILY, 1L, listOf(BackupDay("2026-10-18", listOf(BackupItem("A", false))))),
+                BackupChecklist("Broken", ChecklistType.DAILY, 2L, listOf(BackupDay("not-a-date", emptyList()))),
+            ),
+        )
+
+        val error = runCatching { repository.importBackup(broken) }.exceptionOrNull()
+
+        assertTrue(error is InvalidBackupException)
+        assertEquals(before, BackupJson.encode(repository.exportBackup(exportTime)))
+    }
+
+    @Test
+    fun specialCharactersSurviveRoundTrip() = runTest {
+        val title = "Morgen ☀️ \"routine\" – café & 日本語"
+        val itemText = "Line with \\ backslash, {braces}, [brackets] and émojis 🏃‍♂️"
+        val id = repository.createChecklist(title, ChecklistType.DAILY)
+        repository.addItem(currentDay(id).id, itemText)
+
+        val json = BackupJson.encode(repository.exportBackup(exportTime))
+        repository.importBackup(BackupJson.decode(json))
+
+        val restored = repository.observeChecklists().first().single()
+        assertEquals(title, restored.title)
+        assertEquals(listOf(itemText), items(currentDay(restored.id).id).map { it.text })
+    }
+
+    @Test
+    fun yearOfHistorySurvivesRoundTrip() = runTest {
+        today = LocalDate.of(2025, 10, 18)
+        val id = repository.createChecklist("Year", ChecklistType.DAILY)
+        listOf("A", "B", "C", "D").forEach { repository.addItem(currentDay(id).id, it) }
+        repeat(365) { dayIndex ->
+            // Tick a different number of items each day: 0..4.
+            items(currentDay(id).id).take(dayIndex % 5).forEach { repository.setChecked(it.id, true) }
+            today = today.plusDays(1)
+            repository.ensureToday()
+        }
+        val historyBefore = repository.observeHistory(id).first().map { Triple(it.date, it.done, it.total) }
+        val json = BackupJson.encode(repository.exportBackup(exportTime))
+
+        repository.importBackup(BackupJson.decode(json))
+
+        val newId = repository.observeChecklists().first().single().id
+        val historyAfter = repository.observeHistory(newId).first().map { Triple(it.date, it.done, it.total) }
+        assertEquals(366, historyAfter.size)
+        assertEquals(historyBefore, historyAfter)
+    }
+
+    @Test
+    fun importTrimsWhitespaceInTitlesAndItems() = runTest {
+        repository.importBackup(
+            Backup(
+                exportedAt = "x",
+                checklists = listOf(BackupChecklist("  Spaced  ", ChecklistType.DAILY, 1L, listOf(BackupDay(today.toString(), listOf(BackupItem("  item  ", false)))))),
+            )
+        )
+        val checklist = repository.observeChecklists().first().single()
+        assertEquals("Spaced", checklist.title)
+        assertEquals(listOf("item"), items(currentDay(checklist.id).id).map { it.text })
     }
 }

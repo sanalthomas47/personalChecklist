@@ -11,7 +11,8 @@ import com.santhomach.personalchecklist.util.LogicalDate
 import java.util.concurrent.TimeUnit
 
 /** Makes the daily copies at 2am, then queues itself for the next 2am. */
-class DailyCopyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+class DailyCopyWorker(context: Context, params: WorkerParameters) :
+    CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         (applicationContext as ChecklistApp).repository.ensureToday()
         schedule(applicationContext, ExistingWorkPolicy.APPEND_OR_REPLACE)

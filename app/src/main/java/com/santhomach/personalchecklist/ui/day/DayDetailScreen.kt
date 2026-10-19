@@ -75,7 +75,12 @@ fun DayDetailScreen(
                 HorizontalDivider()
             }
             items(items, key = { it.id }) { item ->
-                ItemRow(item, onCheckedChange = null, onDelete = null, modifier = Modifier.padding(horizontal = 4.dp))
+                ItemRow(
+                    item,
+                    onCheckedChange = null,
+                    onDelete = null,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
             }
         }
     }

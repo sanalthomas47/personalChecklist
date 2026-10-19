@@ -60,7 +60,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ChecklistViewModel(private val repository: ChecklistRepository, val checklistId: Long) : ViewModel() {
+class ChecklistViewModel(private val repository: ChecklistRepository, val checklistId: Long) :
+    ViewModel() {
     val checklist = repository.observeChecklist(checklistId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -76,9 +77,13 @@ class ChecklistViewModel(private val repository: ChecklistRepository, val checkl
         day.value?.let { repository.addItem(it.id, text) }
     }
 
-    fun setChecked(itemId: Long, checked: Boolean) = viewModelScope.launch { repository.setChecked(itemId, checked) }
+    fun setChecked(itemId: Long, checked: Boolean) =
+        viewModelScope.launch { repository.setChecked(itemId, checked) }
+
     fun deleteItem(itemId: Long) = viewModelScope.launch { repository.deleteItem(itemId) }
-    fun rename(title: String) = viewModelScope.launch { repository.renameChecklist(checklistId, title) }
+    fun rename(title: String) =
+        viewModelScope.launch { repository.renameChecklist(checklistId, title) }
+
     fun delete() = viewModelScope.launch { repository.deleteChecklist(checklistId) }
 
     companion object {
@@ -130,14 +135,21 @@ fun ChecklistScreen(
                         Icon(Icons.Filled.MoreVert, contentDescription = "More options")
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(text = { Text("Rename") }, onClick = { menuOpen = false; showRename = true })
-                        DropdownMenuItem(text = { Text("Delete") }, onClick = { menuOpen = false; showDelete = true })
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            onClick = { menuOpen = false; showRename = true })
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = { menuOpen = false; showDelete = true })
                     }
                 },
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).imePadding()) {
+        Column(Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .imePadding()) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
                     (if (isDaily) day?.date else null)?.display() ?: LogicalDate.today().display(),
@@ -150,7 +162,11 @@ fun ChecklistScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                ProgressSummary(items.count { it.isChecked }, items.size, Modifier.padding(top = 12.dp))
+                ProgressSummary(
+                    items.count { it.isChecked },
+                    items.size,
+                    Modifier.padding(top = 12.dp)
+                )
             }
             HorizontalDivider()
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
@@ -164,7 +180,9 @@ fun ChecklistScreen(
                 }
             }
             Row(
-                Modifier.fillMaxWidth().padding(16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(

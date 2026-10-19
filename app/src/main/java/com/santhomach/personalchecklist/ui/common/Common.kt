@@ -139,7 +139,12 @@ fun DeleteChecklistDialog(title: String, onConfirm: () -> Unit, onDismiss: () ->
         title = { Text("Delete checklist?") },
         text = { Text("Delete \"$title\" and all its history? This can't be undone.") },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            TextButton(onClick = onConfirm) {
+                Text(
+                    "Delete",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
@@ -153,7 +158,12 @@ fun ItemRow(
     onDelete: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier.fillMaxWidth().padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .padding(end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Checkbox(checked = item.isChecked, onCheckedChange = onCheckedChange)
         Text(
             item.text,
@@ -163,7 +173,12 @@ fun ItemRow(
             color = if (item.isChecked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
         )
         if (onDelete != null) {
-            IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = "Delete item") }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = "Delete item"
+                )
+            }
         }
     }
 }

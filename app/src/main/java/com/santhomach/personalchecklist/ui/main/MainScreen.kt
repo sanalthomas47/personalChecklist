@@ -89,15 +89,21 @@ class MainViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _messages = Channel<String>(Channel.BUFFERED)
+
     /** One-off messages for the snackbar. */
     val messages = _messages.receiveAsFlow()
 
     private val _pendingImport = MutableStateFlow<Backup?>(null)
+
     /** A backup that was read and validated, waiting for the user to confirm replacing all data. */
     val pendingImport = _pendingImport.asStateFlow()
 
-    fun create(title: String, type: ChecklistType) = viewModelScope.launch { repository.createChecklist(title, type) }
-    fun rename(id: Long, title: String) = viewModelScope.launch { repository.renameChecklist(id, title) }
+    fun create(title: String, type: ChecklistType) =
+        viewModelScope.launch { repository.createChecklist(title, type) }
+
+    fun rename(id: Long, title: String) =
+        viewModelScope.launch { repository.renameChecklist(id, title) }
+
     fun delete(id: Long) = viewModelScope.launch { repository.deleteChecklist(id) }
 
     fun showMessage(text: String) = viewModelScope.launch { _messages.send(text) }
@@ -105,7 +111,12 @@ class MainViewModel(
     fun exportBackup() = viewModelScope.launch {
         val message = try {
             val json = BackupJson.encode(repository.exportBackup())
-            "Backup saved to Downloads/${backupStorage.saveToDownloads(BackupStorage.fileName(), json)}"
+            "Backup saved to Downloads/${
+                backupStorage.saveToDownloads(
+                    BackupStorage.fileName(),
+                    json
+                )
+            }"
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -147,7 +158,8 @@ class MainViewModel(
     companion object {
         val Factory = viewModelFactory {
             initializer {
-                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ChecklistApp
+                val app =
+                    this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ChecklistApp
                 MainViewModel(app.repository, app.backupStorage)
             }
         }
@@ -175,16 +187,21 @@ fun MainScreen(
         viewModel.messages.collect { snackbarHostState.showSnackbar(it, withDismissAction = true) }
     }
 
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let(viewModel::onImportFileChosen)
-    }
-    val storagePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) viewModel.exportBackup() else viewModel.showMessage("Storage permission is needed to save to Downloads.")
-    }
+    val importLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let(viewModel::onImportFileChosen)
+        }
+    val storagePermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) viewModel.exportBackup() else viewModel.showMessage("Storage permission is needed to save to Downloads.")
+        }
 
     fun export() {
         val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
         if (needsPermission) storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) else viewModel.exportBackup()
     }
 
@@ -206,7 +223,13 @@ fun MainScreen(
                             // Some file managers don't label .json files as JSON, so accept the usual fallbacks.
                             onClick = {
                                 menuOpen = false
-                                importLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
+                                importLauncher.launch(
+                                    arrayOf(
+                                        "application/json",
+                                        "application/octet-stream",
+                                        "text/plain"
+                                    )
+                                )
                             },
                         )
                     }
@@ -224,7 +247,13 @@ fun MainScreen(
     ) { padding ->
         val list = checklists
         if (list != null && list.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding).padding(32.dp), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     "No checklists yet.\nTap \"New checklist\" to create one.",
                     textAlign = TextAlign.Center,
@@ -281,8 +310,8 @@ fun MainScreen(
             text = {
                 Text(
                     "This backup from ${backupDateLabel(backup.exportedAt)} has " +
-                        "${checklistCount(backup.checklists.size)}. All your current checklists and their " +
-                        "history will be replaced. This can't be undone."
+                            "${checklistCount(backup.checklists.size)}. All your current checklists and their " +
+                            "history will be replaced. This can't be undone."
                 )
             },
             confirmButton = {
@@ -310,26 +339,40 @@ private fun ChecklistCard(
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })) {
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
+    ) {
         Column(Modifier.padding(start = 16.dp, bottom = 16.dp, end = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     checklist.title,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f).padding(top = 8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 8.dp),
                 )
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "Checklist options")
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(text = { Text("Rename") }, onClick = { menuOpen = false; onRename() })
-                        DropdownMenuItem(text = { Text("Delete") }, onClick = { menuOpen = false; onDelete() })
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            onClick = { menuOpen = false; onRename() })
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = { menuOpen = false; onDelete() })
                     }
                 }
             }
             AssistChip(onClick = onClick, label = { Text(checklist.type.label()) })
-            ProgressSummary(checklist.done, checklist.total, Modifier.padding(top = 8.dp, end = 12.dp))
+            ProgressSummary(
+                checklist.done,
+                checklist.total,
+                Modifier.padding(top = 8.dp, end = 12.dp)
+            )
         }
     }
 }

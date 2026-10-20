@@ -31,7 +31,10 @@ class BackupRepositoryTest {
 
     @Before
     fun setUp() {
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
+        db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AppDatabase::class.java
+        )
             .allowMainThreadQueries()
             .build()
         repository = ChecklistRepository(db) { today }
@@ -40,7 +43,9 @@ class BackupRepositoryTest {
     @After
     fun tearDown() = db.close()
 
-    private suspend fun currentDay(checklistId: Long) = repository.observeCurrentDay(checklistId).first()!!
+    private suspend fun currentDay(checklistId: Long) =
+        repository.observeCurrentDay(checklistId).first()!!
+
     private suspend fun items(dayId: Long) = repository.observeItems(dayId).first()
 
     /** Two days of a daily checklist (with ticks) plus a one-time checklist. */
@@ -68,13 +73,22 @@ class BackupRepositoryTest {
 
         assertEquals("2026-10-18T09:30:15", backup.exportedAt)
         assertEquals(listOf("Morning", "Trip"), backup.checklists.map { it.title })
-        assertEquals(listOf(ChecklistType.DAILY, ChecklistType.ONE_TIME), backup.checklists.map { it.type })
+        assertEquals(
+            listOf(ChecklistType.DAILY, ChecklistType.ONE_TIME),
+            backup.checklists.map { it.type })
 
         val morning = backup.checklists[0]
         assertEquals(listOf("2026-10-17", "2026-10-18"), morning.days.map { it.date })
-        assertEquals(listOf(BackupItem("Run", true), BackupItem("Read", false)), morning.days[0].items)
         assertEquals(
-            listOf(BackupItem("Run", false), BackupItem("Read", false), BackupItem("Stretch", false)),
+            listOf(BackupItem("Run", true), BackupItem("Read", false)),
+            morning.days[0].items
+        )
+        assertEquals(
+            listOf(
+                BackupItem("Run", false),
+                BackupItem("Read", false),
+                BackupItem("Stretch", false)
+            ),
             morning.days[1].items,
         )
         assertEquals(listOf(BackupItem("Pack", true)), backup.checklists[1].days.single().items)
@@ -107,7 +121,12 @@ class BackupRepositoryTest {
             Backup(
                 exportedAt = "2026-10-18T09:30:00",
                 checklists = listOf(
-                    BackupChecklist("New", ChecklistType.ONE_TIME, 1L, listOf(BackupDay("2026-10-10", listOf(BackupItem("A", true))))),
+                    BackupChecklist(
+                        "New",
+                        ChecklistType.ONE_TIME,
+                        1L,
+                        listOf(BackupDay("2026-10-10", listOf(BackupItem("A", true))))
+                    ),
                 ),
             )
         )
@@ -127,9 +146,18 @@ class BackupRepositoryTest {
                     BackupChecklist(
                         "Morning", ChecklistType.DAILY, 1L,
                         listOf(
-                            BackupDay("2026-10-16", listOf(BackupItem("A", true), BackupItem("B", true))),
-                            BackupDay("2026-10-17", listOf(BackupItem("A", true), BackupItem("B", false))),
-                            BackupDay("2026-10-18", listOf(BackupItem("A", false), BackupItem("B", false))),
+                            BackupDay(
+                                "2026-10-16",
+                                listOf(BackupItem("A", true), BackupItem("B", true))
+                            ),
+                            BackupDay(
+                                "2026-10-17",
+                                listOf(BackupItem("A", true), BackupItem("B", false))
+                            ),
+                            BackupDay(
+                                "2026-10-18",
+                                listOf(BackupItem("A", false), BackupItem("B", false))
+                            ),
                         ),
                     ),
                 ),
@@ -148,8 +176,18 @@ class BackupRepositoryTest {
             Backup(
                 exportedAt = "2026-10-01T09:30:00",
                 checklists = listOf(
-                    BackupChecklist("Daily", ChecklistType.DAILY, 1L, listOf(BackupDay("2026-10-01", listOf(BackupItem("A", true))))),
-                    BackupChecklist("Once", ChecklistType.ONE_TIME, 2L, listOf(BackupDay("2026-10-01", listOf(BackupItem("B", true))))),
+                    BackupChecklist(
+                        "Daily",
+                        ChecklistType.DAILY,
+                        1L,
+                        listOf(BackupDay("2026-10-01", listOf(BackupItem("A", true))))
+                    ),
+                    BackupChecklist(
+                        "Once",
+                        ChecklistType.ONE_TIME,
+                        2L,
+                        listOf(BackupDay("2026-10-01", listOf(BackupItem("B", true))))
+                    ),
                 ),
             )
         )
@@ -167,7 +205,17 @@ class BackupRepositoryTest {
     @Test
     fun importGivesChecklistWithoutDaysAnEmptyToday() = runTest {
         repository.importBackup(
-            Backup(exportedAt = "x", checklists = listOf(BackupChecklist("Bare", ChecklistType.ONE_TIME, 1L, emptyList())))
+            Backup(
+                exportedAt = "x",
+                checklists = listOf(
+                    BackupChecklist(
+                        "Bare",
+                        ChecklistType.ONE_TIME,
+                        1L,
+                        emptyList()
+                    )
+                )
+            )
         )
         val id = repository.observeChecklists().first().single().id
         assertEquals(today, currentDay(id).date)
@@ -185,7 +233,14 @@ class BackupRepositoryTest {
         repository.importBackup(
             Backup(
                 exportedAt = "x",
-                checklists = listOf(BackupChecklist("Morning", ChecklistType.DAILY, 1L, listOf(BackupDay(today.toString(), listOf(BackupItem("A", false)))))),
+                checklists = listOf(
+                    BackupChecklist(
+                        "Morning",
+                        ChecklistType.DAILY,
+                        1L,
+                        listOf(BackupDay(today.toString(), listOf(BackupItem("A", false))))
+                    )
+                ),
             )
         )
         val id = repository.observeChecklists().first().single().id
@@ -207,8 +262,18 @@ class BackupRepositoryTest {
         val broken = Backup(
             exportedAt = "x",
             checklists = listOf(
-                BackupChecklist("Fine", ChecklistType.DAILY, 1L, listOf(BackupDay("2026-10-18", listOf(BackupItem("A", false))))),
-                BackupChecklist("Broken", ChecklistType.DAILY, 2L, listOf(BackupDay("not-a-date", emptyList()))),
+                BackupChecklist(
+                    "Fine",
+                    ChecklistType.DAILY,
+                    1L,
+                    listOf(BackupDay("2026-10-18", listOf(BackupItem("A", false))))
+                ),
+                BackupChecklist(
+                    "Broken",
+                    ChecklistType.DAILY,
+                    2L,
+                    listOf(BackupDay("not-a-date", emptyList()))
+                ),
             ),
         )
 
@@ -240,17 +305,20 @@ class BackupRepositoryTest {
         listOf("A", "B", "C", "D").forEach { repository.addItem(currentDay(id).id, it) }
         repeat(365) { dayIndex ->
             // Tick a different number of items each day: 0..4.
-            items(currentDay(id).id).take(dayIndex % 5).forEach { repository.setChecked(it.id, true) }
+            items(currentDay(id).id).take(dayIndex % 5)
+                .forEach { repository.setChecked(it.id, true) }
             today = today.plusDays(1)
             repository.ensureToday()
         }
-        val historyBefore = repository.observeHistory(id).first().map { Triple(it.date, it.done, it.total) }
+        val historyBefore =
+            repository.observeHistory(id).first().map { Triple(it.date, it.done, it.total) }
         val json = BackupJson.encode(repository.exportBackup(exportTime))
 
         repository.importBackup(BackupJson.decode(json))
 
         val newId = repository.observeChecklists().first().single().id
-        val historyAfter = repository.observeHistory(newId).first().map { Triple(it.date, it.done, it.total) }
+        val historyAfter =
+            repository.observeHistory(newId).first().map { Triple(it.date, it.done, it.total) }
         assertEquals(366, historyAfter.size)
         assertEquals(historyBefore, historyAfter)
     }
@@ -260,7 +328,14 @@ class BackupRepositoryTest {
         repository.importBackup(
             Backup(
                 exportedAt = "x",
-                checklists = listOf(BackupChecklist("  Spaced  ", ChecklistType.DAILY, 1L, listOf(BackupDay(today.toString(), listOf(BackupItem("  item  ", false)))))),
+                checklists = listOf(
+                    BackupChecklist(
+                        "  Spaced  ",
+                        ChecklistType.DAILY,
+                        1L,
+                        listOf(BackupDay(today.toString(), listOf(BackupItem("  item  ", false))))
+                    )
+                ),
             )
         )
         val checklist = repository.observeChecklists().first().single()

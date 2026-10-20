@@ -50,9 +50,12 @@ class DailyCopyWorkerTest {
     fun doWorkMakesTodaysCopyOfDailyChecklistsOnly() = runTest {
         val db = app.database
         val yesterday = LogicalDate.today().minusDays(1)
-        val dailyId = db.checklistDao().insert(ChecklistEntity(title = "Morning", type = ChecklistType.DAILY))
-        val oneTimeId = db.checklistDao().insert(ChecklistEntity(title = "Trip", type = ChecklistType.ONE_TIME))
-        val dailyDay = db.dayDao().insert(ChecklistDayEntity(checklistId = dailyId, date = yesterday))
+        val dailyId =
+            db.checklistDao().insert(ChecklistEntity(title = "Morning", type = ChecklistType.DAILY))
+        val oneTimeId =
+            db.checklistDao().insert(ChecklistEntity(title = "Trip", type = ChecklistType.ONE_TIME))
+        val dailyDay =
+            db.dayDao().insert(ChecklistDayEntity(checklistId = dailyId, date = yesterday))
         db.dayDao().insert(ChecklistDayEntity(checklistId = oneTimeId, date = yesterday))
         db.itemDao().insertAll(
             listOf(

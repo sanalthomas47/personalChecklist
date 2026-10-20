@@ -36,7 +36,10 @@ class MainViewModelBackupTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
+        db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AppDatabase::class.java
+        )
             .allowMainThreadQueries()
             .build()
         repository = ChecklistRepository(db) { LocalDate.of(2026, 10, 18) }
@@ -101,7 +104,8 @@ class MainViewModelBackupTest {
     @Test
     fun cancelImportLeavesDataAlone() = runTest {
         repository.createChecklist("Current", ChecklistType.DAILY)
-        storage.files["backup.json"] = BackupJson.encode(repository.exportBackup().copy(checklists = emptyList()))
+        storage.files["backup.json"] =
+            BackupJson.encode(repository.exportBackup().copy(checklists = emptyList()))
 
         vm.onImportFileChosen(storage.uriFor("backup.json")).join()
         vm.cancelImport()

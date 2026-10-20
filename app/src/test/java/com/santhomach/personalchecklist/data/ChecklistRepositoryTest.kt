@@ -25,7 +25,10 @@ class ChecklistRepositoryTest {
 
     @Before
     fun setUp() {
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
+        db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AppDatabase::class.java
+        )
             .allowMainThreadQueries()
             .build()
         repository = ChecklistRepository(db) { today }
@@ -34,11 +37,16 @@ class ChecklistRepositoryTest {
     @After
     fun tearDown() = db.close()
 
-    private suspend fun currentDay(checklistId: Long) = repository.observeCurrentDay(checklistId).first()!!
+    private suspend fun currentDay(checklistId: Long) =
+        repository.observeCurrentDay(checklistId).first()!!
+
     private suspend fun items(dayId: Long) = repository.observeItems(dayId).first()
     private suspend fun history(checklistId: Long) = repository.observeHistory(checklistId).first()
 
-    private suspend fun checklistWithItems(vararg texts: String, type: ChecklistType = ChecklistType.DAILY): Long {
+    private suspend fun checklistWithItems(
+        vararg texts: String,
+        type: ChecklistType = ChecklistType.DAILY
+    ): Long {
         val id = repository.createChecklist("Routine", type)
         val dayId = currentDay(id).id
         texts.forEach { repository.addItem(dayId, it) }

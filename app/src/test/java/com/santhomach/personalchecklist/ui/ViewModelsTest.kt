@@ -38,7 +38,10 @@ class ViewModelsTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
+        db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AppDatabase::class.java
+        )
             .allowMainThreadQueries()
             .build()
         repository = ChecklistRepository(db) { today }
@@ -68,7 +71,10 @@ class ViewModelsTest {
         val vm = MainViewModel(repository, FakeBackupStorage())
         val id = repository.createChecklist("Morning", ChecklistType.DAILY)
         vm.rename(id, "Evening").join()
-        assertEquals("Evening", vm.checklists.first { it?.singleOrNull()?.title == "Evening" }!!.single().title)
+        assertEquals(
+            "Evening",
+            vm.checklists.first { it?.singleOrNull()?.title == "Evening" }!!.single().title
+        )
     }
 
     @Test

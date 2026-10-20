@@ -46,13 +46,19 @@ class MainScreenBackupUiTest {
     private val backupWithTrip = Backup(
         exportedAt = "2026-10-18T09:30:00",
         checklists = listOf(
-            BackupChecklist("Trip from backup", ChecklistType.ONE_TIME, 1L, listOf(BackupDay("2026-10-18", listOf(BackupItem("Pack", true))))),
+            BackupChecklist(
+                "Trip from backup",
+                ChecklistType.ONE_TIME,
+                1L,
+                listOf(BackupDay("2026-10-18", listOf(BackupItem("Pack", true))))
+            ),
         ),
     )
 
     @Before
     fun setUp() {
-        db = Room.inMemoryDatabaseBuilder(compose.activity, AppDatabase::class.java).allowMainThreadQueries().build()
+        db = Room.inMemoryDatabaseBuilder(compose.activity, AppDatabase::class.java)
+            .allowMainThreadQueries().build()
         repository = ChecklistRepository(db)
         storage = FakeBackupStorage()
         val vm = MainViewModel(repository, storage)
@@ -63,7 +69,10 @@ class MainScreenBackupUiTest {
     fun tearDown() = db.close()
 
     private fun waitForText(text: String, substring: Boolean = false) =
-        compose.waitUntilAtLeastOneExists(hasText(text, substring = substring), timeoutMillis = 5_000)
+        compose.waitUntilAtLeastOneExists(
+            hasText(text, substring = substring),
+            timeoutMillis = 5_000
+        )
 
     private fun openMenuItem(label: String) {
         compose.onNodeWithContentDescription("More options").performClick()
@@ -113,7 +122,9 @@ class MainScreenBackupUiTest {
 
         val intent = shadowOf(compose.activity).nextStartedActivityForResult.intent
         assertEquals(Intent.ACTION_OPEN_DOCUMENT, intent.action)
-        assertTrue(intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)!!.contains("application/json"))
+        assertTrue(
+            intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)!!.contains("application/json")
+        )
     }
 
     @Test
@@ -180,7 +191,11 @@ class MainScreenBackupUiTest {
         openMenuItem("Import from JSON")
 
         val shadow = shadowOf(compose.activity)
-        shadow.receiveResult(shadow.nextStartedActivityForResult.intent, Activity.RESULT_CANCELED, null)
+        shadow.receiveResult(
+            shadow.nextStartedActivityForResult.intent,
+            Activity.RESULT_CANCELED,
+            null
+        )
         compose.waitForIdle()
 
         compose.onNodeWithText("Replace all checklists?").assertDoesNotExist()

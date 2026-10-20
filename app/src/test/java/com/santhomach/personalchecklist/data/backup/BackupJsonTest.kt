@@ -16,17 +16,31 @@ class BackupJsonTest {
                 type = ChecklistType.DAILY,
                 createdAt = 1_000L,
                 days = listOf(
-                    BackupDay("2026-10-17", listOf(BackupItem("Run", true), BackupItem("Read", false))),
-                    BackupDay("2026-10-18", listOf(BackupItem("Run", false), BackupItem("Read", false))),
+                    BackupDay(
+                        "2026-10-17",
+                        listOf(BackupItem("Run", true), BackupItem("Read", false))
+                    ),
+                    BackupDay(
+                        "2026-10-18",
+                        listOf(BackupItem("Run", false), BackupItem("Read", false))
+                    ),
                 ),
             ),
-            BackupChecklist("Trip", ChecklistType.ONE_TIME, 2_000L, listOf(BackupDay("2026-10-18", emptyList()))),
+            BackupChecklist(
+                "Trip",
+                ChecklistType.ONE_TIME,
+                2_000L,
+                listOf(BackupDay("2026-10-18", emptyList()))
+            ),
         ),
     )
 
     private fun assertRejected(json: String, messagePart: String) {
         val error = assertThrows(InvalidBackupException::class.java) { BackupJson.decode(json) }
-        assertTrue("\"${error.message}\" should mention \"$messagePart\"", error.message!!.contains(messagePart))
+        assertTrue(
+            "\"${error.message}\" should mention \"$messagePart\"",
+            error.message!!.contains(messagePart)
+        )
     }
 
     @Test
@@ -61,27 +75,38 @@ class BackupJsonTest {
         """.trimIndent()
         val backup = BackupJson.decode(json)
         assertEquals("Gym", backup.checklists.single().title)
-        assertEquals(BackupItem("Squats", true), backup.checklists.single().days.single().items.single())
+        assertEquals(
+            BackupItem("Squats", true),
+            backup.checklists.single().days.single().items.single()
+        )
     }
 
     @Test
     fun emptyBackupIsValid() {
-        val empty = Backup(exportedAt = LocalDateTime.of(2026, 10, 18, 9, 30).toString(), checklists = emptyList())
+        val empty = Backup(
+            exportedAt = LocalDateTime.of(2026, 10, 18, 9, 30).toString(),
+            checklists = emptyList()
+        )
         assertEquals(empty, BackupJson.decode(BackupJson.encode(empty)))
     }
 
     @Test
-    fun rejectsTextThatIsNotJson() = assertRejected("hello, this is a shopping list", "isn't a checklist backup")
+    fun rejectsTextThatIsNotJson() =
+        assertRejected("hello, this is a shopping list", "isn't a checklist backup")
 
     @Test
     fun rejectsEmptyFile() = assertRejected("", "isn't a checklist backup")
 
     @Test
-    fun rejectsOtherJson() = assertRejected("""{"name": "something else"}""", "isn't a checklist backup")
+    fun rejectsOtherJson() =
+        assertRejected("""{"name": "something else"}""", "isn't a checklist backup")
 
     @Test
     fun rejectsWrongFormatMarker() =
-        assertRejected("""{"format": "other-app", "version": 1, "exportedAt": "x", "checklists": []}""", "isn't a checklist backup")
+        assertRejected(
+            """{"format": "other-app", "version": 1, "exportedAt": "x", "checklists": []}""",
+            "isn't a checklist backup"
+        )
 
     @Test
     fun rejectsNewerVersion() = assertRejected(

@@ -70,3 +70,12 @@ data class DaySummary(
     val done: Int,
     val total: Int,
 )
+
+/** How often one item (matched by its text) was left unticked across a range of past days. */
+data class MissedItemStat(
+    val text: String,
+    /** Days on which the item was left unticked. */
+    val missed: Int,
+    /** Days on which the item was on the list. */
+    val total: Int,
+)

@@ -82,6 +82,27 @@ interface DayDao {
         """
     )
     fun observeHistory(checklistId: Long): Flow<List<DaySummary>>
+
+    /**
+     * Per item text, on how many days in [from, before) it was left unticked, most missed first.
+     * Counts days rather than rows, so an item listed twice on one day still counts once.
+     */
+    @Query(
+        """
+        SELECT i.text AS text,
+               COUNT(DISTINCT CASE WHEN i.isChecked = 0 THEN d.id END) AS missed,
+               COUNT(DISTINCT d.id) AS total
+        FROM items i
+        JOIN checklist_days d ON d.id = i.dayId
+        WHERE d.checklistId = :checklistId AND d.date >= :from AND d.date < :before
+        GROUP BY i.text
+        ORDER BY missed DESC, CAST(missed AS REAL) / total DESC, i.text COLLATE NOCASE
+        """
+    )
+    fun observeMissedItems(checklistId: Long, from: LocalDate, before: LocalDate): Flow<List<MissedItemStat>>
+
+    @Query("SELECT COUNT(*) FROM checklist_days WHERE checklistId = :checklistId AND date >= :from AND date < :before")
+    fun observeDayCount(checklistId: Long, from: LocalDate, before: LocalDate): Flow<Int>
 }
 
 @Dao

@@ -12,6 +12,8 @@ import com.santhomach.personalchecklist.data.db.ChecklistEntity
 import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.data.db.ItemEntity
 import com.santhomach.personalchecklist.util.LogicalDate
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -30,6 +32,19 @@ class ChecklistRepository(
     fun observeDay(dayId: Long) = dayDao.observe(dayId)
     fun observeItems(dayId: Long) = itemDao.observeByDay(dayId)
     fun observeHistory(checklistId: Long) = dayDao.observeHistory(checklistId)
+
+    /** Which items were left unticked on past days within [period]; today is excluded. */
+    fun observeMissedItems(checklistId: Long, period: MissedPeriod): Flow<MissedItemsReport> {
+        val before = today()
+        val from = period.from(before)
+        return combine(
+            dayDao.observeDayCount(checklistId, from, before),
+            dayDao.observeMissedItems(checklistId, from, before),
+        ) { pastDays, stats ->
+            val (missed, neverMissed) = stats.partition { it.missed > 0 }
+            MissedItemsReport(pastDays, missed, neverMissed.map { it.text })
+        }
+    }
 
     /**
      * Creates today's copy of every daily checklist that doesn't have one yet, copying the items of

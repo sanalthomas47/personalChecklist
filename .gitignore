@@ -12,3 +12,7 @@ build/
 # Release signing (keep a backup, never commit)
 /keystore/
 /keystore.properties
+
+# APKs from Android Studio "Generate Signed App Bundle / APK"
+/app/debug/
+/app/release/

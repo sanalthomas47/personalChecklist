@@ -27,8 +27,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.santhomach.personalchecklist.data.ChecklistRepository
 import com.santhomach.personalchecklist.data.MissedPeriod
+import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.ui.common.ProgressSummary
-import com.santhomach.personalchecklist.ui.common.display
+import com.santhomach.personalchecklist.ui.common.displayPeriod
+import com.santhomach.personalchecklist.ui.common.label
 import com.santhomach.personalchecklist.ui.common.repoViewModelFactory
 import com.santhomach.personalchecklist.util.LogicalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,7 +48,7 @@ class HistoryViewModel(repository: ChecklistRepository, checklistId: Long) : Vie
     val days = repository.observeHistory(checklistId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _missedPeriod = MutableStateFlow(MissedPeriod.MONTH)
+    private val _missedPeriod = MutableStateFlow(MissedPeriod.LONG)
     val missedPeriod = _missedPeriod.asStateFlow()
 
     /** Null until the first result for the current period arrives. */
@@ -76,7 +78,9 @@ fun HistoryScreen(
     val days by viewModel.days.collectAsStateWithLifecycle()
     val missedPeriod by viewModel.missedPeriod.collectAsStateWithLifecycle()
     val missedItems by viewModel.missedItems.collectAsStateWithLifecycle()
-    val today = LogicalDate.today()
+    val type = checklist?.type ?: ChecklistType.DAILY
+    val current = type.periodStart(LogicalDate.today())
+    val currentSuffix = if (type == ChecklistType.WEEKLY) " (this week)" else " (today)"
 
     Scaffold(
         topBar = {
@@ -96,11 +100,11 @@ fun HistoryScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item(key = "missed") {
-                MissedItemsSection(missedItems, missedPeriod, viewModel::setMissedPeriod)
+                MissedItemsSection(missedItems, type, missedPeriod, viewModel::setMissedPeriod)
             }
-            item(key = "daily-header") {
+            item(key = "history-header") {
                 Text(
-                    "Daily history",
+                    "${type.label()} history",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 8.dp),
                 )
@@ -109,7 +113,7 @@ fun HistoryScreen(
                 Card(onClick = { onOpenDay(day.dayId) }, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
                         Text(
-                            day.date.display() + if (day.date == today) " (today)" else "",
+                            type.displayPeriod(day.date) + if (day.date == current) currentSuffix else "",
                             style = MaterialTheme.typography.titleMedium,
                         )
                         ProgressSummary(day.done, day.total, Modifier.padding(top = 8.dp))

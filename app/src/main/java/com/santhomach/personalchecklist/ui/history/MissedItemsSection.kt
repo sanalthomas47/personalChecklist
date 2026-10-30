@@ -25,31 +25,34 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.santhomach.personalchecklist.data.MissedItemsReport
 import com.santhomach.personalchecklist.data.MissedPeriod
+import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.data.db.MissedItemStat
+import com.santhomach.personalchecklist.ui.common.periodUnit
 
-fun MissedPeriod.label(): String = when (this) {
-    MissedPeriod.WEEK -> "7 days"
-    MissedPeriod.MONTH -> "30 days"
-    MissedPeriod.ALL -> "All time"
-}
+/** "7 days" / "30 days" / "All time" for daily checklists, "4 weeks" / "12 weeks" / "All time" for weekly. */
+fun MissedPeriod.label(type: ChecklistType): String =
+    length(type)?.let { "$it ${type.periodUnit()}s" } ?: "All time"
 
-private fun days(count: Int) = if (count == 1) "1 day" else "$count days"
+private fun count(count: Int, unit: String) = if (count == 1) "1 $unit" else "$count ${unit}s"
 
 private fun percent(missed: Int, total: Int) = if (total == 0) 0 else missed * 100 / total
 
-fun missedLabel(missed: Int, total: Int): String = "$missed/$total days · ${percent(missed, total)}%"
+fun missedLabel(missed: Int, total: Int, unit: String = "day"): String =
+    "$missed/$total ${unit}s · ${percent(missed, total)}%"
 
 /**
- * Ranked bars of the items left unticked most often on past days. Bars share one scale (the
- * number of past days in the period) so their lengths compare directly.
+ * Ranked bars of the items left unticked most often on past days (or weeks). Bars share one scale
+ * (the number of past periods in the range) so their lengths compare directly.
  */
 @Composable
 fun MissedItemsSection(
     report: MissedItemsReport?,
+    type: ChecklistType,
     period: MissedPeriod,
     onPeriodChange: (MissedPeriod) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val unit = type.periodUnit()
     Card(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Most missed items", style = MaterialTheme.typography.titleMedium)
@@ -58,19 +61,20 @@ fun MissedItemsSection(
                     FilterChip(
                         selected = option == period,
                         onClick = { onPeriodChange(option) },
-                        label = { Text(option.label()) },
+                        label = { Text(option.label(type)) },
                     )
                 }
             }
             when {
                 report == null -> Unit
-                report.pastDays == 0 -> SecondaryText("Missed items show up here once a full day has passed.")
+                report.pastPeriods == 0 -> SecondaryText("Missed items show up here once a full $unit has passed.")
                 else -> {
-                    SecondaryText("Based on ${days(report.pastDays)} before today")
+                    val current = if (type == ChecklistType.WEEKLY) "this week" else "today"
+                    SecondaryText("Based on ${count(report.pastPeriods, unit)} before $current")
                     if (report.missed.isEmpty()) {
                         Text("Nothing missed in this period.", style = MaterialTheme.typography.bodyMedium)
                     }
-                    report.missed.forEach { MissedItemBar(it, scale = report.pastDays) }
+                    report.missed.forEach { MissedItemBar(it, scale = report.pastPeriods, unit = unit) }
                     if (report.neverMissed.isNotEmpty()) {
                         SecondaryText("Never missed: ${report.neverMissed.joinToString(", ")}")
                     }
@@ -86,7 +90,7 @@ private fun SecondaryText(text: String) {
 }
 
 @Composable
-private fun MissedItemBar(stat: MissedItemStat, scale: Int) {
+private fun MissedItemBar(stat: MissedItemStat, scale: Int, unit: String) {
     val barColor = MaterialTheme.colorScheme.primary
     val shape = RoundedCornerShape(4.dp)
     Column(
@@ -94,7 +98,7 @@ private fun MissedItemBar(stat: MissedItemStat, scale: Int) {
             .fillMaxWidth()
             .clearAndSetSemantics {
                 contentDescription =
-                    "${stat.text}, missed ${stat.missed} of ${days(stat.total)}, ${percent(stat.missed, stat.total)} percent"
+                    "${stat.text}, missed ${stat.missed} of ${count(stat.total, unit)}, ${percent(stat.missed, stat.total)} percent"
             },
     ) {
         Row(verticalAlignment = Alignment.Bottom) {
@@ -106,7 +110,7 @@ private fun MissedItemBar(stat: MissedItemStat, scale: Int) {
                 modifier = Modifier.weight(1f),
             )
             Text(
-                missedLabel(stat.missed, stat.total),
+                missedLabel(stat.missed, stat.total, unit),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp),

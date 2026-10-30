@@ -14,6 +14,9 @@ import com.santhomach.personalchecklist.data.db.ItemEntity
 import com.santhomach.personalchecklist.util.LogicalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -33,27 +36,35 @@ class ChecklistRepository(
     fun observeItems(dayId: Long) = itemDao.observeByDay(dayId)
     fun observeHistory(checklistId: Long) = dayDao.observeHistory(checklistId)
 
-    /** Which items were left unticked on past days within [period]; today is excluded. */
-    fun observeMissedItems(checklistId: Long, period: MissedPeriod): Flow<MissedItemsReport> {
-        val before = today()
-        val from = period.from(before)
-        return combine(
-            dayDao.observeDayCount(checklistId, from, before),
-            dayDao.observeMissedItems(checklistId, from, before),
-        ) { pastDays, stats ->
-            val (missed, neverMissed) = stats.partition { it.missed > 0 }
-            MissedItemsReport(pastDays, missed, neverMissed.map { it.text })
-        }
+    /**
+     * Which items were left unticked on past days (or weeks, for a weekly checklist) within [period];
+     * the current day or week is excluded.
+     */
+    fun observeMissedItems(checklistId: Long, period: MissedPeriod): Flow<MissedItemsReport> = flow {
+        val type = checklistDao.observe(checklistId).first()?.type ?: return@flow
+        val before = type.periodStart(today())
+        val from = period.from(before, type)
+        emitAll(
+            combine(
+                dayDao.observeDayCount(checklistId, from, before),
+                dayDao.observeMissedItems(checklistId, from, before),
+            ) { pastPeriods, stats ->
+                val (missed, neverMissed) = stats.partition { it.missed > 0 }
+                MissedItemsReport(pastPeriods, missed, neverMissed.map { it.text })
+            }
+        )
     }
 
     /**
-     * Creates today's copy of every daily checklist that doesn't have one yet, copying the items of
-     * its most recent day with all checkboxes cleared. Safe to call any number of times.
+     * Creates the current copy of every daily and weekly checklist that doesn't have one yet (today's
+     * for daily, this week's for weekly), copying the items of its most recent copy with all
+     * checkboxes cleared. Safe to call any number of times.
      */
     suspend fun ensureToday() {
-        val date = today()
+        val today = today()
         db.withTransaction {
-            for (checklist in checklistDao.getByType(ChecklistType.DAILY)) {
+            for (checklist in checklistDao.getAll().filter { it.type.repeats }) {
+                val date = checklist.type.periodStart(today)
                 if (dayDao.get(checklist.id, date) != null) continue
                 val previous = dayDao.latest(checklist.id)
                 val newDayId = dayDao.insert(ChecklistDayEntity(checklistId = checklist.id, date = date))
@@ -70,7 +81,7 @@ class ChecklistRepository(
 
     suspend fun createChecklist(title: String, type: ChecklistType): Long = db.withTransaction {
         val id = checklistDao.insert(ChecklistEntity(title = title.trim(), type = type))
-        dayDao.insert(ChecklistDayEntity(checklistId = id, date = today()))
+        dayDao.insert(ChecklistDayEntity(checklistId = id, date = type.periodStart(today())))
         id
     }
 
@@ -108,7 +119,8 @@ class ChecklistRepository(
 
     /**
      * Replaces all data with the contents of [backup] in one transaction, so a failure leaves the
-     * existing data untouched. Daily checklists then get today's copy if the backup doesn't have one.
+     * existing data untouched. Daily and weekly checklists then get their current copy if the backup
+     * doesn't have one.
      */
     suspend fun importBackup(backup: Backup) {
         db.withTransaction {
@@ -117,7 +129,9 @@ class ChecklistRepository(
                 val checklistId = checklistDao.insert(
                     ChecklistEntity(title = checklist.title.trim(), type = checklist.type, createdAt = checklist.createdAt)
                 )
-                val days = checklist.days.ifEmpty { listOf(BackupDay(today().toString(), emptyList())) }
+                val days = checklist.days.ifEmpty {
+                    listOf(BackupDay(checklist.type.periodStart(today()).toString(), emptyList()))
+                }
                 for (day in days) {
                     val date = BackupJson.parseDate(day.date, checklist.title)
                     val dayId = dayDao.insert(ChecklistDayEntity(checklistId = checklistId, date = date))

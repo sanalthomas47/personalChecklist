@@ -57,7 +57,7 @@ class MissedItemsTest {
 
         val report = report(id)
 
-        assertEquals(3, report.pastDays)
+        assertEquals(3, report.pastPeriods)
         assertEquals(
             listOf(MissedItemStat("Stretch", 3, 3), MissedItemStat("Read", 2, 3), MissedItemStat("Run", 1, 3)),
             report.missed,
@@ -72,7 +72,7 @@ class MissedItemsTest {
         day(id, 0, "Run" to false) // today, still in progress
 
         val report = report(id)
-        assertEquals(1, report.pastDays)
+        assertEquals(1, report.pastPeriods)
         assertTrue(report.missed.isEmpty())
         assertEquals(listOf("Run"), report.neverMissed)
     }
@@ -95,8 +95,8 @@ class MissedItemsTest {
         day(id, 7, "Run" to false) // first day of the week
         day(id, 1, "Run" to true)  // last day of the week
 
-        val week = report(id, MissedPeriod.WEEK)
-        assertEquals(2, week.pastDays)
+        val week = report(id, MissedPeriod.SHORT)
+        assertEquals(2, week.pastPeriods)
         assertEquals(listOf(MissedItemStat("Run", 1, 2)), week.missed)
     }
 
@@ -108,12 +108,12 @@ class MissedItemsTest {
         day(id, 10, "Run" to false)
         day(id, 3, "Run" to true)
 
-        val week = report(id, MissedPeriod.WEEK)
-        assertEquals(1, week.pastDays)
+        val week = report(id, MissedPeriod.SHORT)
+        assertEquals(1, week.pastPeriods)
         assertTrue(week.missed.isEmpty())
         assertEquals(listOf("Run"), week.neverMissed)
         // 30 days ago is the first day of the month period.
-        assertEquals(listOf(MissedItemStat("Run", 2, 3)), report(id, MissedPeriod.MONTH).missed)
+        assertEquals(listOf(MissedItemStat("Run", 2, 3)), report(id, MissedPeriod.LONG).missed)
         assertEquals(listOf(MissedItemStat("Run", 3, 4)), report(id, MissedPeriod.ALL).missed)
     }
 
@@ -134,7 +134,7 @@ class MissedItemsTest {
         day(id, 1, "Run" to true, "New habit" to true)
 
         val report = report(id)
-        assertEquals(4, report.pastDays)
+        assertEquals(4, report.pastPeriods)
         assertEquals(
             listOf(MissedItemStat("Old habit", 2, 2), MissedItemStat("New habit", 1, 2)),
             report.missed,
@@ -179,7 +179,7 @@ class MissedItemsTest {
         repository.addItem(repository.observeCurrentDay(id).first()!!.id, "Run")
 
         val report = report(id)
-        assertEquals(0, report.pastDays)
+        assertEquals(0, report.pastPeriods)
         assertTrue(report.missed.isEmpty())
         assertTrue(report.neverMissed.isEmpty())
     }
@@ -190,7 +190,7 @@ class MissedItemsTest {
         day(id, 2)
         day(id, 1, "Run" to false)
         val report = report(id)
-        assertEquals(2, report.pastDays)
+        assertEquals(2, report.pastPeriods)
         assertEquals(listOf(MissedItemStat("Run", 1, 1)), report.missed)
     }
 
@@ -209,7 +209,7 @@ class MissedItemsTest {
         rolling.ensureToday() // today
 
         val report = rolling.observeMissedItems(id, MissedPeriod.ALL).first()
-        assertEquals(2, report.pastDays)
+        assertEquals(2, report.pastPeriods)
         assertEquals(listOf(MissedItemStat("Read", 2, 2), MissedItemStat("Run", 1, 2)), report.missed)
     }
 }

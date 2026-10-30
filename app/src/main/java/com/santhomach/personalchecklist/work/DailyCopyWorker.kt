@@ -10,7 +10,10 @@ import com.santhomach.personalchecklist.ChecklistApp
 import com.santhomach.personalchecklist.util.LogicalDate
 import java.util.concurrent.TimeUnit
 
-/** Makes the daily copies (and, on Mondays, the weekly ones) at 2am, then queues itself for the next 2am. */
+/**
+ * Makes the daily copies at 2am (plus the weekly ones on Mondays and the monthly ones on the 1st),
+ * then queues itself for the next 2am.
+ */
 class DailyCopyWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {

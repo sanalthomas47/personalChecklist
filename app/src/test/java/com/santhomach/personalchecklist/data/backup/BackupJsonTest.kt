@@ -116,7 +116,7 @@ class BackupJsonTest {
 
     @Test
     fun rejectsUnknownChecklistType() = assertRejected(
-        BackupJson.encode(sample).replace("\"ONE_TIME\"", "\"MONTHLY\""),
+        BackupJson.encode(sample).replace("\"ONE_TIME\"", "\"YEARLY\""),
         "isn't a checklist backup",
     )
 

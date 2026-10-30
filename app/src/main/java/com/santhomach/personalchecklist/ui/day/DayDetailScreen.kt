@@ -24,13 +24,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.santhomach.personalchecklist.data.ChecklistRepository
 import com.santhomach.personalchecklist.ui.common.ItemRow
 import com.santhomach.personalchecklist.ui.common.ProgressSummary
-import com.santhomach.personalchecklist.ui.common.display
+import com.santhomach.personalchecklist.ui.common.displayPeriod
 import com.santhomach.personalchecklist.ui.common.repoViewModelFactory
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DayDetailViewModel(repository: ChecklistRepository, dayId: Long) : ViewModel() {
     val day = repository.observeDay(dayId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** The checklist this copy belongs to, so a weekly copy can be titled by its week. */
+    val checklist = repository.observeDay(dayId)
+        .flatMapLatest { day -> day?.let { repository.observeChecklist(it.checklistId) } ?: emptyFlow() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val items = repository.observeItems(dayId)
@@ -43,7 +52,7 @@ class DayDetailViewModel(repository: ChecklistRepository, dayId: Long) : ViewMod
     }
 }
 
-/** Read-only view of one past day. */
+/** Read-only view of one past day (or week). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayDetailScreen(
@@ -51,12 +60,17 @@ fun DayDetailScreen(
     viewModel: DayDetailViewModel = viewModel(factory = DayDetailViewModel.Factory),
 ) {
     val day by viewModel.day.collectAsStateWithLifecycle()
+    val checklist by viewModel.checklist.collectAsStateWithLifecycle()
     val items by viewModel.items.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(day?.date?.display().orEmpty()) },
+                title = {
+                    val date = day?.date
+                    val type = checklist?.type
+                    Text(if (date != null && type != null) type.displayPeriod(date) else "")
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

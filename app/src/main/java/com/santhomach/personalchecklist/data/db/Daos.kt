@@ -21,9 +21,6 @@ interface ChecklistDao {
     @Query("SELECT * FROM checklists WHERE id = :id")
     fun observe(id: Long): Flow<ChecklistEntity?>
 
-    @Query("SELECT * FROM checklists WHERE type = :type")
-    suspend fun getByType(type: ChecklistType): List<ChecklistEntity>
-
     @Query("SELECT * FROM checklists ORDER BY createdAt, id")
     suspend fun getAll(): List<ChecklistEntity>
 
@@ -31,7 +28,7 @@ interface ChecklistDao {
     @Query("DELETE FROM checklists")
     suspend fun deleteAll()
 
-    /** Progress comes from each checklist's latest day: today for daily, the only day for one-time. */
+    /** Progress comes from each checklist's latest day: the current day or week, or a one-time checklist's only day. */
     @Query(
         """
         SELECT c.id, c.title, c.type,
@@ -84,7 +81,7 @@ interface DayDao {
     fun observeHistory(checklistId: Long): Flow<List<DaySummary>>
 
     /**
-     * Per item text, on how many days in [from, before) it was left unticked, most missed first.
+     * Per item text, on how many days (or weeks) in [from, before) it was left unticked, most missed first.
      * Counts days rather than rows, so an item listed twice on one day still counts once.
      */
     @Query(

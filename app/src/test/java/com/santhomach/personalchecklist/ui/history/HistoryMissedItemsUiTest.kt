@@ -123,7 +123,7 @@ class HistoryMissedItemsUiTest {
 
         waitForBar("Run, missed 1 of 2 days, 50 percent")
         compose.onNodeWithText("30 days").assertIsSelected()
-        assertEquals(MissedPeriod.MONTH, vm.missedPeriod.value)
+        assertEquals(MissedPeriod.LONG, vm.missedPeriod.value)
 
         compose.onNodeWithText("All time").performClick()
         waitForBar("Run, missed 2 of 3 days, 66 percent")

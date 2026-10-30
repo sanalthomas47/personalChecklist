@@ -4,9 +4,24 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 
-enum class ChecklistType { DAILY, ONE_TIME }
+enum class ChecklistType {
+    DAILY,
+    WEEKLY,
+    ONE_TIME;
+
+    /** Whether the checklist gets a fresh unticked copy each period (day or week). */
+    val repeats: Boolean get() = this != ONE_TIME
+
+    /** Date the copy current on [today] is stored under: that week's Monday for weekly, else [today]. */
+    fun periodStart(today: LocalDate): LocalDate = when (this) {
+        WEEKLY -> today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        DAILY, ONE_TIME -> today
+    }
+}
 
 @Entity(tableName = "checklists")
 data class ChecklistEntity(
@@ -16,7 +31,10 @@ data class ChecklistEntity(
     val createdAt: Long = System.currentTimeMillis(),
 )
 
-/** One dated copy of a checklist. Daily checklists get one per day; one-time checklists have exactly one. */
+/**
+ * One dated copy of a checklist. Daily checklists get one per day, weekly ones one per week (dated
+ * by its Monday), and one-time checklists have exactly one.
+ */
 @Entity(
     tableName = "checklist_days",
     foreignKeys = [

@@ -32,6 +32,7 @@ class FormattingTest {
     @Test
     fun typeLabels() {
         assertEquals("Daily", ChecklistType.DAILY.label())
+        assertEquals("Weekly", ChecklistType.WEEKLY.label())
         assertEquals("One-time", ChecklistType.ONE_TIME.label())
     }
 }

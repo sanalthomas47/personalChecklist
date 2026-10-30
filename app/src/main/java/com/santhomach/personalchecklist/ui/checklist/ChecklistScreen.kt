@@ -49,6 +49,7 @@ import com.santhomach.personalchecklist.ui.common.ItemRow
 import com.santhomach.personalchecklist.ui.common.NameDialog
 import com.santhomach.personalchecklist.ui.common.ProgressSummary
 import com.santhomach.personalchecklist.ui.common.display
+import com.santhomach.personalchecklist.ui.common.displayPeriod
 import com.santhomach.personalchecklist.ui.common.label
 import com.santhomach.personalchecklist.ui.common.repoViewModelFactory
 import com.santhomach.personalchecklist.util.LogicalDate
@@ -65,7 +66,7 @@ class ChecklistViewModel(private val repository: ChecklistRepository, val checkl
     val checklist = repository.observeChecklist(checklistId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Today's copy for a daily checklist (the newest day), or the only day of a one-time checklist. */
+    /** The newest copy: today's for daily, this week's for weekly, or a one-time checklist's only one. */
     val day = repository.observeCurrentDay(checklistId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -107,7 +108,7 @@ fun ChecklistScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
-    val isDaily = checklist?.type == ChecklistType.DAILY
+    val repeats = checklist?.type?.repeats == true
 
     fun submit() {
         if (newItem.isNotBlank()) {
@@ -126,7 +127,7 @@ fun ChecklistScreen(
                     }
                 },
                 actions = {
-                    if (isDaily) {
+                    if (repeats) {
                         IconButton(onClick = { onOpenHistory(viewModel.checklistId) }) {
                             Icon(Icons.Filled.DateRange, contentDescription = "History")
                         }
@@ -152,12 +153,14 @@ fun ChecklistScreen(
             .imePadding()) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
-                    (if (isDaily) day?.date else null)?.display() ?: LogicalDate.today().display(),
+                    checklist?.type?.takeIf { repeats }?.let { type -> day?.date?.let(type::displayPeriod) }
+                        ?: LogicalDate.today().display(),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 checklist?.let {
                     Text(
-                        it.type.label() + " checklist",
+                        it.type.label() + " checklist" +
+                            if (it.type == ChecklistType.WEEKLY) " · resets every Monday" else "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

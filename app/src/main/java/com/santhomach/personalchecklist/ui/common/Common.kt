@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -12,6 +13,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
@@ -55,10 +58,22 @@ inline fun <reified VM : ViewModel> repoViewModelFactory(
 fun LocalDate.display(locale: Locale = Locale.getDefault()): String =
     format(DateTimeFormatter.ofPattern("EEEE, d MMM yyyy", locale))
 
+/** e.g. "Week of 26 Oct 2026", for the Monday a weekly copy is dated by. */
+fun LocalDate.displayWeek(locale: Locale = Locale.getDefault()): String =
+    "Week of " + format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
+
+/** Heading for one copy of a checklist of this type: its week for weekly, otherwise its day. */
+fun ChecklistType.displayPeriod(date: LocalDate): String =
+    if (this == ChecklistType.WEEKLY) date.displayWeek() else date.display()
+
 fun ChecklistType.label(): String = when (this) {
     ChecklistType.DAILY -> "Daily"
+    ChecklistType.WEEKLY -> "Weekly"
     ChecklistType.ONE_TIME -> "One-time"
 }
+
+/** What one copy of the checklist covers: "week" for weekly, otherwise "day". */
+fun ChecklistType.periodUnit(): String = if (this == ChecklistType.WEEKLY) "week" else "day"
 
 fun progressLabel(done: Int, total: Int): String =
     if (total == 0) "No items" else "$done/$total · ${done * 100 / total}%"
@@ -109,12 +124,25 @@ fun NameDialog(
                                 selected = type == option,
                                 onClick = { type = option },
                                 shape = SegmentedButtonDefaults.itemShape(index, types.size),
-                            ) { Text(option.label()) }
+                                // No tick icon, and labels shrink to fit large font sizes: three
+                                // options leave little room.
+                                icon = {},
+                            ) {
+                                Text(
+                                    option.label(),
+                                    maxLines = 1,
+                                    autoSize = TextAutoSize.StepBased(
+                                        minFontSize = 8.sp,
+                                        maxFontSize = LocalTextStyle.current.fontSize,
+                                    ),
+                                )
+                            }
                         }
                     }
                     Text(
                         when (type) {
                             ChecklistType.DAILY -> "A fresh unticked copy is made every day at 2am."
+                            ChecklistType.WEEKLY -> "A fresh unticked copy is made every Monday at 2am."
                             ChecklistType.ONE_TIME -> "A single list that is never copied."
                         },
                         style = MaterialTheme.typography.bodySmall,

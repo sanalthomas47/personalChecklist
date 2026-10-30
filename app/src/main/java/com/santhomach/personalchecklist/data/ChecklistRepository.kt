@@ -37,8 +37,8 @@ class ChecklistRepository(
     fun observeHistory(checklistId: Long) = dayDao.observeHistory(checklistId)
 
     /**
-     * Which items were left unticked on past days (or weeks, for a weekly checklist) within [period];
-     * the current day or week is excluded.
+     * Which items were left unticked on past days (or weeks, or months, for weekly and monthly
+     * checklists) within [period]; the current one is excluded.
      */
     fun observeMissedItems(checklistId: Long, period: MissedPeriod): Flow<MissedItemsReport> = flow {
         val type = checklistDao.observe(checklistId).first()?.type ?: return@flow
@@ -56,8 +56,8 @@ class ChecklistRepository(
     }
 
     /**
-     * Creates the current copy of every daily and weekly checklist that doesn't have one yet (today's
-     * for daily, this week's for weekly), copying the items of its most recent copy with all
+     * Creates the current copy of every repeating checklist that doesn't have one yet (today's for
+     * daily, this week's for weekly, this month's for monthly), copying the items of its most recent copy with all
      * checkboxes cleared. Safe to call any number of times.
      */
     suspend fun ensureToday() {
@@ -119,7 +119,7 @@ class ChecklistRepository(
 
     /**
      * Replaces all data with the contents of [backup] in one transaction, so a failure leaves the
-     * existing data untouched. Daily and weekly checklists then get their current copy if the backup
+     * existing data untouched. Repeating checklists then get their current copy if the backup
      * doesn't have one.
      */
     suspend fun importBackup(backup: Backup) {

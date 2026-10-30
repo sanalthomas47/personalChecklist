@@ -5,7 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -13,12 +14,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,9 +26,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
@@ -62,18 +60,44 @@ fun LocalDate.display(locale: Locale = Locale.getDefault()): String =
 fun LocalDate.displayWeek(locale: Locale = Locale.getDefault()): String =
     "Week of " + format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
 
-/** Heading for one copy of a checklist of this type: its week for weekly, otherwise its day. */
-fun ChecklistType.displayPeriod(date: LocalDate): String =
-    if (this == ChecklistType.WEEKLY) date.displayWeek() else date.display()
+/** e.g. "October 2026", for the 1st a monthly copy is dated by. */
+fun LocalDate.displayMonth(locale: Locale = Locale.getDefault()): String =
+    format(DateTimeFormatter.ofPattern("MMMM yyyy", locale))
+
+/** Heading for one copy of a checklist of this type: its week or month, otherwise its day. */
+fun ChecklistType.displayPeriod(date: LocalDate): String = when (this) {
+    ChecklistType.WEEKLY -> date.displayWeek()
+    ChecklistType.MONTHLY -> date.displayMonth()
+    ChecklistType.DAILY, ChecklistType.ONE_TIME -> date.display()
+}
 
 fun ChecklistType.label(): String = when (this) {
     ChecklistType.DAILY -> "Daily"
     ChecklistType.WEEKLY -> "Weekly"
+    ChecklistType.MONTHLY -> "Monthly"
     ChecklistType.ONE_TIME -> "One-time"
 }
 
-/** What one copy of the checklist covers: "week" for weekly, otherwise "day". */
-fun ChecklistType.periodUnit(): String = if (this == ChecklistType.WEEKLY) "week" else "day"
+/** What one copy of the checklist covers: "day", "week" or "month". */
+fun ChecklistType.periodUnit(): String = when (this) {
+    ChecklistType.WEEKLY -> "week"
+    ChecklistType.MONTHLY -> "month"
+    ChecklistType.DAILY, ChecklistType.ONE_TIME -> "day"
+}
+
+/** How the current copy is referred to: "today", "this week" or "this month". */
+fun ChecklistType.currentPeriodName(): String = when (this) {
+    ChecklistType.WEEKLY, ChecklistType.MONTHLY -> "this ${periodUnit()}"
+    ChecklistType.DAILY, ChecklistType.ONE_TIME -> "today"
+}
+
+/** When a fresh copy is made, e.g. "every Monday"; null for one-time checklists. */
+fun ChecklistType.resetSchedule(): String? = when (this) {
+    ChecklistType.DAILY -> "every day"
+    ChecklistType.WEEKLY -> "every Monday"
+    ChecklistType.MONTHLY -> "on the 1st of every month"
+    ChecklistType.ONE_TIME -> null
+}
 
 fun progressLabel(done: Int, total: Int): String =
     if (total == 0) "No items" else "$done/$total · ${done * 100 / total}%"
@@ -117,34 +141,32 @@ fun NameDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (showTypeSelector) {
-                    val types = ChecklistType.entries
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        types.forEachIndexed { index, option ->
-                            SegmentedButton(
-                                selected = type == option,
-                                onClick = { type = option },
-                                shape = SegmentedButtonDefaults.itemShape(index, types.size),
-                                // No tick icon, and labels shrink to fit large font sizes: three
-                                // options leave little room.
-                                icon = {},
+                    // A radio list rather than segmented buttons: four types don't fit side by side.
+                    Column(Modifier.selectableGroup()) {
+                        ChecklistType.entries.forEach { option ->
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = type == option,
+                                        onClick = { type = option },
+                                        role = Role.RadioButton,
+                                    )
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                RadioButton(selected = type == option, onClick = null)
                                 Text(
                                     option.label(),
-                                    maxLines = 1,
-                                    autoSize = TextAutoSize.StepBased(
-                                        minFontSize = 8.sp,
-                                        maxFontSize = LocalTextStyle.current.fontSize,
-                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(start = 12.dp),
                                 )
                             }
                         }
                     }
                     Text(
-                        when (type) {
-                            ChecklistType.DAILY -> "A fresh unticked copy is made every day at 2am."
-                            ChecklistType.WEEKLY -> "A fresh unticked copy is made every Monday at 2am."
-                            ChecklistType.ONE_TIME -> "A single list that is never copied."
-                        },
+                        type.resetSchedule()?.let { "A fresh unticked copy is made $it at 2am." }
+                            ?: "A single list that is never copied.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

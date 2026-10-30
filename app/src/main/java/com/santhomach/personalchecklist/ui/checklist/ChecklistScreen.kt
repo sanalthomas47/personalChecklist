@@ -52,6 +52,7 @@ import com.santhomach.personalchecklist.ui.common.display
 import com.santhomach.personalchecklist.ui.common.displayPeriod
 import com.santhomach.personalchecklist.ui.common.label
 import com.santhomach.personalchecklist.ui.common.repoViewModelFactory
+import com.santhomach.personalchecklist.ui.common.resetSchedule
 import com.santhomach.personalchecklist.util.LogicalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -160,7 +161,9 @@ fun ChecklistScreen(
                 checklist?.let {
                     Text(
                         it.type.label() + " checklist" +
-                            if (it.type == ChecklistType.WEEKLY) " · resets every Monday" else "",
+                            if (it.type == ChecklistType.WEEKLY || it.type == ChecklistType.MONTHLY) {
+                                " · resets ${it.type.resetSchedule()}"
+                            } else "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

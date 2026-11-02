@@ -11,14 +11,19 @@ import java.time.temporal.TemporalAdjusters
 enum class ChecklistType {
     DAILY,
     WEEKLY,
+    MONTHLY,
     ONE_TIME;
 
-    /** Whether the checklist gets a fresh unticked copy each period (day or week). */
+    /** Whether the checklist gets a fresh unticked copy each period (day, week or month). */
     val repeats: Boolean get() = this != ONE_TIME
 
-    /** Date the copy current on [today] is stored under: that week's Monday for weekly, else [today]. */
+    /**
+     * Date the copy current on [today] is stored under: that week's Monday for weekly, the 1st of
+     * the month for monthly, else [today].
+     */
     fun periodStart(today: LocalDate): LocalDate = when (this) {
         WEEKLY -> today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        MONTHLY -> today.withDayOfMonth(1)
         DAILY, ONE_TIME -> today
     }
 }
@@ -33,7 +38,8 @@ data class ChecklistEntity(
 
 /**
  * One dated copy of a checklist. Daily checklists get one per day, weekly ones one per week (dated
- * by its Monday), and one-time checklists have exactly one.
+ * by its Monday), monthly ones one per month (dated by its 1st), and one-time checklists have
+ * exactly one.
  */
 @Entity(
     tableName = "checklist_days",

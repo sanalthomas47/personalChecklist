@@ -33,6 +33,19 @@ class FormattingTest {
     fun typeLabels() {
         assertEquals("Daily", ChecklistType.DAILY.label())
         assertEquals("Weekly", ChecklistType.WEEKLY.label())
+        assertEquals("Monthly", ChecklistType.MONTHLY.label())
+    }
+
+    @Test
+    fun periodHeadings() {
+        val first = LocalDate.of(2026, 10, 1)
+        assertEquals("October 2026", first.displayMonth(Locale.ENGLISH))
+        assertEquals("Week of 26 Oct 2026", LocalDate.of(2026, 10, 26).displayWeek(Locale.ENGLISH))
+        assertEquals(listOf("today", "this week", "this month", "today"), ChecklistType.entries.map { it.currentPeriodName() })
+        assertEquals(
+            listOf("every day", "every Monday", "on the 1st of every month", null),
+            ChecklistType.entries.map { it.resetSchedule() },
+        )
         assertEquals("One-time", ChecklistType.ONE_TIME.label())
     }
 }

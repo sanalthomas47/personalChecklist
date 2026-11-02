@@ -29,6 +29,7 @@ import com.santhomach.personalchecklist.data.ChecklistRepository
 import com.santhomach.personalchecklist.data.MissedPeriod
 import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.ui.common.ProgressSummary
+import com.santhomach.personalchecklist.ui.common.currentPeriodName
 import com.santhomach.personalchecklist.ui.common.displayPeriod
 import com.santhomach.personalchecklist.ui.common.label
 import com.santhomach.personalchecklist.ui.common.repoViewModelFactory
@@ -80,7 +81,7 @@ fun HistoryScreen(
     val missedItems by viewModel.missedItems.collectAsStateWithLifecycle()
     val type = checklist?.type ?: ChecklistType.DAILY
     val current = type.periodStart(LogicalDate.today())
-    val currentSuffix = if (type == ChecklistType.WEEKLY) " (this week)" else " (today)"
+    val currentSuffix = " (${type.currentPeriodName()})"
 
     Scaffold(
         topBar = {

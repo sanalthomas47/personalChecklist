@@ -27,9 +27,10 @@ import com.santhomach.personalchecklist.data.MissedItemsReport
 import com.santhomach.personalchecklist.data.MissedPeriod
 import com.santhomach.personalchecklist.data.db.ChecklistType
 import com.santhomach.personalchecklist.data.db.MissedItemStat
+import com.santhomach.personalchecklist.ui.common.currentPeriodName
 import com.santhomach.personalchecklist.ui.common.periodUnit
 
-/** "7 days" / "30 days" / "All time" for daily checklists, "4 weeks" / "12 weeks" / "All time" for weekly. */
+/** e.g. "7 days" / "30 days" / "All time"; weekly and monthly checklists count weeks and months instead. */
 fun MissedPeriod.label(type: ChecklistType): String =
     length(type)?.let { "$it ${type.periodUnit()}s" } ?: "All time"
 
@@ -41,7 +42,7 @@ fun missedLabel(missed: Int, total: Int, unit: String = "day"): String =
     "$missed/$total ${unit}s · ${percent(missed, total)}%"
 
 /**
- * Ranked bars of the items left unticked most often on past days (or weeks). Bars share one scale
+ * Ranked bars of the items left unticked most often on past days (or weeks, or months). Bars share one scale
  * (the number of past periods in the range) so their lengths compare directly.
  */
 @Composable
@@ -69,8 +70,7 @@ fun MissedItemsSection(
                 report == null -> Unit
                 report.pastPeriods == 0 -> SecondaryText("Missed items show up here once a full $unit has passed.")
                 else -> {
-                    val current = if (type == ChecklistType.WEEKLY) "this week" else "today"
-                    SecondaryText("Based on ${count(report.pastPeriods, unit)} before $current")
+                    SecondaryText("Based on ${count(report.pastPeriods, unit)} before ${type.currentPeriodName()}")
                     if (report.missed.isEmpty()) {
                         Text("Nothing missed in this period.", style = MaterialTheme.typography.bodyMedium)
                     }

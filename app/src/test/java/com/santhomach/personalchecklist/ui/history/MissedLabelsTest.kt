@@ -20,6 +20,7 @@ class MissedLabelsTest {
     fun periodLabels() {
         assertEquals(listOf("7 days", "30 days", "All time"), MissedPeriod.entries.map { it.label(ChecklistType.DAILY) })
         assertEquals(listOf("4 weeks", "12 weeks", "All time"), MissedPeriod.entries.map { it.label(ChecklistType.WEEKLY) })
+        assertEquals(listOf("3 months", "12 months", "All time"), MissedPeriod.entries.map { it.label(ChecklistType.MONTHLY) })
     }
 
     @Test
@@ -38,5 +39,14 @@ class MissedLabelsTest {
         assertEquals(LocalDate.of(2026, 9, 28), MissedPeriod.SHORT.from(monday, weekly))
         assertEquals(LocalDate.of(2026, 8, 3), MissedPeriod.LONG.from(monday, weekly))
         assertEquals(LocalDate.MIN, MissedPeriod.ALL.from(monday, weekly))
+    }
+
+    @Test
+    fun monthlyPeriodStartDatesCountWholeMonths() {
+        val first = LocalDate.of(2026, 10, 1)
+        val monthly = ChecklistType.MONTHLY
+        assertEquals(LocalDate.of(2026, 7, 1), MissedPeriod.SHORT.from(first, monthly))
+        assertEquals(LocalDate.of(2025, 10, 1), MissedPeriod.LONG.from(first, monthly))
+        assertEquals(LocalDate.MIN, MissedPeriod.ALL.from(first, monthly))
     }
 }

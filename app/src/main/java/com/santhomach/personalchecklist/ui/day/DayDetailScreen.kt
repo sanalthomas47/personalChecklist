@@ -39,7 +39,9 @@ class DayDetailViewModel(repository: ChecklistRepository, dayId: Long) : ViewMod
 
     /** The checklist this copy belongs to, so a weekly copy can be titled by its week. */
     val checklist = repository.observeDay(dayId)
-        .flatMapLatest { day -> day?.let { repository.observeChecklist(it.checklistId) } ?: emptyFlow() }
+        .flatMapLatest { day ->
+            day?.let { repository.observeChecklist(it.checklistId) } ?: emptyFlow()
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val items = repository.observeItems(dayId)

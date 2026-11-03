@@ -148,22 +148,25 @@ fun ChecklistScreen(
             )
         },
     ) { padding ->
-        Column(Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .imePadding()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+        ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Text(
-                    checklist?.type?.takeIf { repeats }?.let { type -> day?.date?.let(type::displayPeriod) }
+                    checklist?.type?.takeIf { repeats }
+                        ?.let { type -> day?.date?.let(type::displayPeriod) }
                         ?: LogicalDate.today().display(),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 checklist?.let {
                     Text(
                         it.type.label() + " checklist" +
-                            if (it.type == ChecklistType.WEEKLY || it.type == ChecklistType.MONTHLY) {
-                                " · resets ${it.type.resetSchedule()}"
-                            } else "",
+                                if (it.type == ChecklistType.WEEKLY || it.type == ChecklistType.MONTHLY) {
+                                    " · resets ${it.type.resetSchedule()}"
+                                } else "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

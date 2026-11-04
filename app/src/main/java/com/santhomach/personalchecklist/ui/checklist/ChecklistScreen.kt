@@ -65,15 +65,18 @@ import kotlinx.coroutines.launch
 class ChecklistViewModel(private val repository: ChecklistRepository, val checklistId: Long) :
     ViewModel() {
     val checklist = repository.observeChecklist(checklistId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            null)
 
     /** The newest copy: today's for daily, this week's for weekly, or a one-time checklist's only one. */
     val day = repository.observeCurrentDay(checklistId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            null)
 
     val items = repository.observeCurrentDay(checklistId)
         .flatMapLatest { day -> day?.let { repository.observeItems(it.id) } ?: emptyFlow() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            emptyList())
 
     fun addItem(text: String) = viewModelScope.launch {
         day.value?.let { repository.addItem(it.id, text) }

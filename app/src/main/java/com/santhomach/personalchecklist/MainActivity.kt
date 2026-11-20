@@ -57,11 +57,15 @@ private fun AppNavHost() {
             HistoryScreen(
                 onBack = { navController.popBackStack() },
                 onOpenDay = { navController.navigate("day/$it") },
+                onEditDay = { navController.navigate("day/$it?edit=true") },
             )
         }
         composable(
-            "day/{dayId}",
-            arguments = listOf(navArgument("dayId") { type = NavType.LongType }),
+            "day/{dayId}?edit={edit}",
+            arguments = listOf(
+                navArgument("dayId") { type = NavType.LongType },
+                navArgument("edit") { type = NavType.BoolType; defaultValue = false },
+            ),
         ) {
             DayDetailScreen(onBack = { navController.popBackStack() })
         }

@@ -6,12 +6,14 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.santhomach.personalchecklist.data.ChecklistRepository
@@ -139,6 +141,7 @@ class HistoryMissedItemsUiTest {
         day(1, "Run" to true)
         show()
         waitForText("Daily history")
-        waitForText(today.minusDays(1).display())
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(today.minusDays(1).display()))
+        compose.onNodeWithText(today.minusDays(1).display()).assertIsDisplayed()
     }
 }

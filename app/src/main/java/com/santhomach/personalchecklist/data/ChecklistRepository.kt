@@ -79,6 +79,27 @@ class ChecklistRepository(
         }
     }
 
+    /**
+     * Returns the copy for the past day (or week, or month) containing [date], so it can be updated
+     * after the fact. If the app wasn't opened then and there is no copy, one is made with the
+     * items of the nearest earlier copy (or, failing that, the nearest later one), all unticked.
+     * Existing copies are returned as they are.
+     */
+    suspend fun pastDay(checklistId: Long, date: LocalDate): Long = db.withTransaction {
+        val checklist = requireNotNull(checklistDao.get(checklistId)) { "No checklist $checklistId" }
+        require(checklist.type.repeats) { "One-time checklists have no past days" }
+        val periodDate = checklist.type.periodStart(date)
+        require(periodDate < checklist.type.periodStart(today())) { "$date is not in the past" }
+
+        dayDao.get(checklistId, periodDate)?.let { return@withTransaction it.id }
+        val source = dayDao.latestBefore(checklistId, periodDate) ?: dayDao.earliestAfter(checklistId, periodDate)
+        val dayId = dayDao.insert(ChecklistDayEntity(checklistId = checklistId, date = periodDate))
+        if (source != null) {
+            itemDao.insertAll(itemDao.getByDay(source.id).map { it.copy(id = 0, dayId = dayId, isChecked = false) })
+        }
+        dayId
+    }
+
     suspend fun createChecklist(title: String, type: ChecklistType): Long = db.withTransaction {
         val id = checklistDao.insert(ChecklistEntity(title = title.trim(), type = type))
         dayDao.insert(ChecklistDayEntity(checklistId = id, date = type.periodStart(today())))

@@ -21,6 +21,9 @@ interface ChecklistDao {
     @Query("SELECT * FROM checklists WHERE id = :id")
     fun observe(id: Long): Flow<ChecklistEntity?>
 
+    @Query("SELECT * FROM checklists WHERE id = :id")
+    suspend fun get(id: Long): ChecklistEntity?
+
     @Query("SELECT * FROM checklists ORDER BY createdAt, id")
     suspend fun getAll(): List<ChecklistEntity>
 
@@ -56,6 +59,12 @@ interface DayDao {
 
     @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId ORDER BY date DESC LIMIT 1")
     suspend fun latest(checklistId: Long): ChecklistDayEntity?
+
+    @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId AND date < :date ORDER BY date DESC LIMIT 1")
+    suspend fun latestBefore(checklistId: Long, date: LocalDate): ChecklistDayEntity?
+
+    @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId AND date > :date ORDER BY date LIMIT 1")
+    suspend fun earliestAfter(checklistId: Long, date: LocalDate): ChecklistDayEntity?
 
     @Query("SELECT * FROM checklist_days WHERE checklistId = :checklistId ORDER BY date")
     suspend fun getAll(checklistId: Long): List<ChecklistDayEntity>
